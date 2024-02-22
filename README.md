@@ -4,6 +4,59 @@ A Python package which monitors the state of supervisord processes, and
 terminates the container if any of the critical processes terminate,
 if any of the processes crash, and optionally if all processes have terminated.
 
+## Usage
+
+In a container which uses supervisord as its init process, make sure the supervisord-watchdog
+package is installed.
+
+```
+pip install supervisord_watchdog
+```
+
+Then, add the following to your `supervisord.conf` file:
+
+```
+# supervisord_watchdog will kill the container if program:example-proc dies.
+[eventlistener:supervisord-watchdog]
+command=/usr/local/bin/supervisord_watchdog
+    --critical-process example-proc
+events=PROCESS_STATE
+autostart=true
+autorestart=false
+startretries=0
+```
+
+The available arguments to pass to `supervisord_watchdog` are:
+
+```
+usage: supervisord_watchdog [-h]
+                            [--termination-grace-period TERMINATION_GRACE_PERIOD]
+                            [--critical-process CRITICAL_PROCESS [CRITICAL_PROCESS ...]]
+                            [--terminate-if-all-processes-end]
+                            [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
+
+Supervisord watchdog
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --termination-grace-period TERMINATION_GRACE_PERIOD, -t TERMINATION_GRACE_PERIOD
+                        The number of seconds to wait for the
+                        container to shut down gracefully before
+                        sending SIGKILL to all processes.
+  --critical-process CRITICAL_PROCESS [CRITICAL_PROCESS ...], -c CRITICAL_PROCESS [CRITICAL_PROCESS ...]
+                        The names of the critical supervisord
+                        processes which should be monitored by the
+                        watchdog. If any of these processes
+                        terminate, then the container will be
+                        terminated
+  --terminate-if-all-processes-end, -T
+                        If this argument is provided, then the
+                        container will be terminated if all
+                        supervisord processes terminate.
+  --log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                        The log level to use for the watchdog.
+```
+
 ## Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
