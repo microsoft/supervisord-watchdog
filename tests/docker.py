@@ -37,20 +37,17 @@ class DockerContainer:
         assert self.image_name is None, "Image has already been built."
 
         build = subprocess.Popen(
-            ["docker", "build", self.build_context, "-f", self.dockerfile_path],
+            ["docker", "build", self.build_context, "-f", self.dockerfile_path, "-q"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
         return_code = build.wait()
-        self._log_pipe(build.stderr, logging.ERROR)
+        self._log_pipe(build.stderr, logging.WARN)
 
         assert return_code == 0, "Failed to build example image."
 
         assert build.stdout is not None, "Failed to capture build output."
-        last_line_of_output = build.stdout.readlines()[-1].decode("utf-8").strip()
-        match = re.search(r"Successfully built ([0-9a-f]+)", last_line_of_output)
-        assert match is not None, "Failed to parse image name from build output."
-        self.image_name = match.group(1)
+        self.image_name = build.stdout.readlines()[-1].decode("utf-8").strip()
 
         assert (
             self.image_name is not None

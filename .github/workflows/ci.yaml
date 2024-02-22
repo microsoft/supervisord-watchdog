@@ -1,0 +1,40 @@
+name: ci
+
+on: pull_request
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up python
+        id: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      - name: Install project
+        run: poetry install --no-interaction
+
+      - name: Lint
+        run: poetry run mypy
+      
+      - name: Check formatting
+        run: |
+          poetry run black --check supervisord_watchdog
+          poetry run black --check tests
+
+      - name: Build
+        run: poetry build
+        
+      - name: Run tests
+        run: poetry run pytest
