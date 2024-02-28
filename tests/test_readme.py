@@ -1,6 +1,9 @@
+import logging
 import re
 
 from supervisord_watchdog.watchdog import _create_argument_parser
+
+logger = logging.getLogger(__name__)
 
 
 # Replace "usage: any-program-name" in the input string with
@@ -19,4 +22,8 @@ def test_readme_help():
 
     usage = replace_program_name(_create_argument_parser().format_help(), program_name)
 
-    assert usage in readme
+    if usage not in readme:
+        logger.error("The usage string in the README is out of date.")
+        logger.error("Please update the README with the following usage string:")
+        logger.error(usage)
+        raise AssertionError()

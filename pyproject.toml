@@ -17,6 +17,10 @@ python = "^3.9"
 supervisor = "^4.2.0"
 types-setuptools = "^69.0.0.0"
 docker = "^7.0.0"
+# We install argparse specifically so that even with
+# different python versions installed, the help text
+# is still formatted the same.
+argparse = "^1.4.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.4.3"
