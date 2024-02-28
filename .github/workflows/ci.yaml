@@ -26,12 +26,10 @@ jobs:
         run: poetry install --no-interaction
 
       - name: Lint
-        run: poetry run mypy
+        run: poetry run ruff check --diff .
       
       - name: Check formatting
-        run: |
-          poetry run black --check supervisord_watchdog
-          poetry run black --check tests
+        run: poetry run ruff format --diff .
 
       - name: Build
         run: poetry build

@@ -3,10 +3,10 @@ import logging
 import subprocess
 import sys
 import time
-
 from logging import Logger
-from supervisor.childutils import listener  # type: ignore
 from typing import List
+
+from supervisor.childutils import listener
 
 # The set of events which can be received from supervisord
 # which indicate that a process has exited unexpectedly.
@@ -62,7 +62,11 @@ def run(
     should_terminate_if_all_processes_end: bool,
 ) -> None:
     logger.info(
-        "Supervisord watchdog is running with critical processes: %r, terminate-if-all-processes-end: %r, termination grace period: %.2f",
+        """\
+Supervisord watchdog is running with:
+  critical processes: %r
+  terminate-if-all-processes-end: %r,
+  termination grace period: %.2f""",
         critical_processes,
         should_terminate_if_all_processes_end,
         termination_grace_period_seconds,
@@ -128,7 +132,7 @@ def run(
             listener.ok(sys.stdout)
 
 
-def main() -> None:
+def _create_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Supervisord watchdog")
 
     parser.add_argument(
@@ -136,7 +140,8 @@ def main() -> None:
         "-t",
         type=float,
         default=5.0,
-        help="The number of seconds to wait for the container to shut down gracefully before sending SIGKILL to all processes.",
+        help="The number of seconds to wait for the container to shut down  "
+        "gracefully before sending SIGKILL to all processes.",
     )
 
     parser.add_argument(
@@ -145,16 +150,17 @@ def main() -> None:
         type=str,
         default=[],
         nargs="+",
-        help="\
-The names of the critical supervisord processes which should be monitored by the watchdog. \
-If any of these processes terminate, then the container will be terminated",
+        help="The names of the critical supervisord processes which should be  "
+        "monitored by the watchdog. If any of these processes terminate, "
+        "then the container will be terminated",
     )
 
     parser.add_argument(
         "--terminate-if-all-processes-end",
         "-T",
         action="store_true",
-        help="If this argument is provided, then the container will be terminated if all supervisord processes terminate.",
+        help="If this argument is provided, then the container will be terminated "
+        "if all supervisord processes terminate.",
     )
 
     parser.add_argument(
@@ -164,7 +170,11 @@ If any of these processes terminate, then the container will be terminated",
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
     )
 
-    args = parser.parse_args()
+    return parser
+
+
+def main() -> None:
+    args = _create_argument_parser().parse_args()
 
     logging.basicConfig(
         stream=sys.stderr,

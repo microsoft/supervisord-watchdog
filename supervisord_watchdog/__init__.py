@@ -4,11 +4,10 @@ terminates the container if any of the critical processes terminate,
 if any of the processes crash, and optionally if all processes have terminated.
 """
 
-from pkg_resources import DistributionNotFound, get_distribution
+import contextlib
+from importlib.metadata import PackageNotFoundError, version
+
+contextlib.suppress(PackageNotFoundError)
 
 # Try and expose __version__, as per PEP396.
-try:
-    __version__ = get_distribution(__name__).version
-except DistributionNotFound:
-    # package is not installed
-    pass
+__version__ = version(__name__)

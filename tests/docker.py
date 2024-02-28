@@ -1,121 +1,68 @@
-import subprocess
 import logging
-import time
-
-from typing import IO, Optional, Type, Literal
+from dataclasses import dataclass
 from types import TracebackType
+from typing import List, Literal, Optional, Type, Union
 
-CONTAINER_START_WAIT_TIME_SECONDS = 5
+import docker
 
 
+@dataclass
 class DockerContainer:
-
     logger: logging.Logger
     build_context: str
     dockerfile_path: str
-    image_name: Optional[str]
-    container_name: Optional[str]
-
-    def __init__(
-        self, logger: logging.Logger, build_context: str, dockerfile_path: str
-    ):
-        self.logger = logger
-        self.build_context = build_context
-        self.dockerfile_path = dockerfile_path
-        self.image_name = None
-        self.container_name = None
-
-    def _log_pipe(self, pipe: Optional[IO[bytes]], level: int) -> None:
-        assert pipe is not None, "Pipe is not open."
-        for line in iter(pipe.readline, b""):
-            self.logger.log(level, line.decode("utf-8").strip())
+    client: docker.DockerClient = docker.from_env()
+    image: Optional[docker.models.images.Image] = None
+    container: Optional[docker.models.containers.Container] = None
 
     def build(self) -> str:
-        self.logger.info("Building example image...")
+        self.logger.info("Building image...")
 
-        assert self.image_name is None, "Image has already been built."
+        assert self.image is None, "Image has already been built."
 
-        build = subprocess.Popen(
-            ["docker", "build", self.build_context, "-f", self.dockerfile_path, "-q"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+        self.image, logs = self.client.images.build(
+            path=self.build_context,
+            dockerfile=self.dockerfile_path,
+            rm=True,
+            pull=True,
         )
-        return_code = build.wait()
-        self._log_pipe(build.stderr, logging.WARN)
 
-        assert return_code == 0, "Failed to build example image."
+        for log in logs:
+            self.logger.debug(log)
 
-        assert build.stdout is not None, "Failed to capture build output."
-        self.image_name = build.stdout.readlines()[-1].decode("utf-8").strip()
+        self.logger.info(f"Built example image: {self.image.short_id}")
 
-        assert (
-            self.image_name is not None
-        ), "Failed to parse image name from build output."
-
-        self.logger.info(f"Built example image: {self.image_name}")
-
-        return self.image_name
+        return self.image.id
 
     def start(self) -> str:
-        self.logger.info("Starting example container...")
+        self.logger.info("Starting container...")
 
-        assert self.image_name is not None, "Image has not been built."
-        assert self.container_name is None, "Container has already been run."
+        assert self.image is not None, "Image has not been built."
+        assert self.container is None, "Container has already been run."
 
-        run = subprocess.Popen(
-            ["docker", "run", "--rm", "-d", self.image_name],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+        self.container = self.client.containers.run(
+            self.image,
+            remove=True,
+            detach=True,
+            tty=True,
         )
 
-        self._log_pipe(run.stderr, logging.ERROR)
-
-        return_code = run.wait()
-
-        assert return_code == 0, "Failed to run example container."
-
-        assert run.stdout is not None, "Failed to capture run output."
-        self.container_name = run.stdout.read().decode("utf-8").strip()
-
-        assert (
-            self.container_name is not None
-        ), "Failed to parse container name from run output."
-
-        self.logger.info(f"Started example container: {self.container_name}")
-
-        return self.container_name
+        return self.container.name
 
     def kill(self) -> None:
-        self.logger.info(f"Killing container: {self.container_name}")
+        self.logger.info("Killing container...")
 
-        assert self.container_name is not None, "Container has not been run."
+        assert self.container is not None, "Container has not been run."
 
-        kill = subprocess.Popen(
-            ["docker", "kill", self.container_name],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
+        self.container.kill()
 
-        return_code = kill.wait()
-        self._log_pipe(kill.stdout, logging.DEBUG)
-        self._log_pipe(kill.stderr, logging.ERROR)
+        self.logger.info(f"Killed container: {self.container.name}")
 
-        assert return_code == 0, "Failed to kill container."
-
-        self.logger.info(f"Killed container: {self.container_name}")
-
-        self.container_name = None
+        self.container = None
 
     def __enter__(self) -> "DockerContainer":
         self.build()
         self.start()
-        create_time = time.time()
-        while time.time() - create_time < CONTAINER_START_WAIT_TIME_SECONDS:
-            if self.is_alive():
-                break
-            time.sleep(1)
-        else:
-            raise Exception("Container did not start in time.")
         return self
 
     def __exit__(
@@ -129,38 +76,35 @@ class DockerContainer:
         return False
 
     def is_alive(self) -> bool:
-        assert self.container_name is not None, "Container has not been run."
-        inspect = subprocess.Popen(
-            [
-                "docker",
-                "inspect",
-                "--format",
-                "{{.State.Running}}",
-                self.container_name,
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-
-        return_code = inspect.wait()
-
-        if return_code != 0:
+        if self.container is None:
+            return False
+        try:
+            self.container.reload()
+            return self.container.status == "running"
+        except docker.errors.NotFound:
+            self.container = None
             return False
 
-        assert inspect.stdout is not None, "Failed to capture inspect output."
-        return inspect.stdout.read().decode("utf-8").strip() == "true"
+    def exec(self, cmd: Union[str, List[str]]) -> None:
+        self.logger.info(f"Running command: {cmd}...")
 
-    def exec(self, cmd: str) -> None:
-        assert self.container_name is not None, "Container has not been run."
+        assert self.is_alive(), "Container is not running."
 
-        exec = subprocess.Popen(
-            ["docker", "exec", self.container_name, "sh", "-c", cmd],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+        return_code, (stdout, stderr) = self.container.exec_run(
+            cmd,
+            tty=True,
+            demux=True,
+            stdout=True,
+            stderr=True,
         )
 
-        return_code = exec.wait()
-        self._log_pipe(exec.stdout, logging.DEBUG)
-        self._log_pipe(exec.stderr, logging.ERROR)
+        if stdout is not None:
+            self.logger.debug(stdout)
+        if stderr is not None:
+            self.logger.warning(stderr)
 
-        assert return_code == 0, "Failed to execute command in container."
+        self.logger.info(f"Ran command: {cmd}...")
+
+        assert (
+            return_code == 0
+        ), "Failed to execute command in container. Return code: {return_code}"

@@ -1,5 +1,6 @@
-import time
 import logging
+import time
+
 from tests.docker import DockerContainer
 
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ def test_example_container() -> None:
         assert container.is_alive()
 
         # Kill the critical process, proc.py
-        container.exec("kill $(ps aux | grep proc.py | awk '{print $2}' | head -n 1)")
+        container.exec(["pkill", "-f", "proc.py"])
 
         # The container should then die on its own
         start_time = time.time()
