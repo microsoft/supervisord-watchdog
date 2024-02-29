@@ -29,27 +29,20 @@ startretries=0
 The available arguments to pass to `supervisord_watchdog` are:
 
 ```
-usage: supervisord_watchdog [-h] [--termination-grace-period TERMINATION_GRACE_PERIOD]
-              [--critical-process CRITICAL_PROCESS [CRITICAL_PROCESS ...]]
-              [--terminate-if-all-processes-end]
-              [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
+usage: supervisord_watchdog [-h] [--termination-grace-period TERMINATION_GRACE_PERIOD] [--critical-process CRITICAL_PROCESS [CRITICAL_PROCESS ...]]
+              [--terminate-if-all-processes-end] [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
 
 Supervisord watchdog
 
 optional arguments:
   -h, --help            show this help message and exit
   --termination-grace-period TERMINATION_GRACE_PERIOD, -t TERMINATION_GRACE_PERIOD
-                        The number of seconds to wait for the container to
-                        shut down gracefully before sending SIGKILL to all
-                        processes.
+                        The number of seconds to wait for the container to shut down gracefully before sending SIGKILL to all processes.
   --critical-process CRITICAL_PROCESS [CRITICAL_PROCESS ...], -c CRITICAL_PROCESS [CRITICAL_PROCESS ...]
-                        The names of the critical supervisord processes which
-                        should be monitored by the watchdog. If any of these
-                        processes terminate, then the container will be
-                        terminated
+                        The names of the critical supervisord processes which should be monitored by the watchdog. If any of these processes terminate, then the
+                        container will be terminated
   --terminate-if-all-processes-end, -T
-                        If this argument is provided, then the container will
-                        be terminated if all supervisord processes terminate.
+                        If this argument is provided, then the container will be terminated if all supervisord processes terminate.
   --log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
                         The log level to use for the watchdog.
 ```
