@@ -133,7 +133,10 @@ Supervisord watchdog is running with:
 
 
 def _create_argument_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Supervisord watchdog")
+    parser = argparse.ArgumentParser(
+        description="Supervisord watchdog",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
 
     parser.add_argument(
         "--termination-grace-period",

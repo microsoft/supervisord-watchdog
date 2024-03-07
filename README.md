@@ -37,14 +37,14 @@ Supervisord watchdog
 optional arguments:
   -h, --help            show this help message and exit
   --termination-grace-period TERMINATION_GRACE_PERIOD, -t TERMINATION_GRACE_PERIOD
-                        The number of seconds to wait for the container to shut down gracefully before sending SIGKILL to all processes.
+                        The number of seconds to wait for the container to shut down gracefully before sending SIGKILL to all processes. (default: 5.0)
   --critical-process CRITICAL_PROCESS [CRITICAL_PROCESS ...], -c CRITICAL_PROCESS [CRITICAL_PROCESS ...]
-                        The names of the critical supervisord processes which should be monitored by the watchdog. If any of these processes terminate, then the
-                        container will be terminated
+                        The names of the critical supervisord processes which should be monitored by the watchdog. If any of these processes terminate, then the container will
+                        be terminated (default: [])
   --terminate-if-all-processes-end, -T
-                        If this argument is provided, then the container will be terminated if all supervisord processes terminate.
+                        If this argument is provided, then the container will be terminated if all supervisord processes terminate. (default: False)
   --log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
-                        The log level to use for the watchdog.
+                        The log level to use for the watchdog. (default: INFO)
 ```
 
 ## Contributing
