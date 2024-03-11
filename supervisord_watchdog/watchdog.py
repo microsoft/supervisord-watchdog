@@ -3,6 +3,7 @@ import logging
 import subprocess
 import sys
 import time
+from collections.abc import Generator
 from logging import Logger
 
 from supervisor.childutils import listener
@@ -54,6 +55,22 @@ def kill_container(logger: Logger, grace_period_seconds: float) -> None:
     subprocess.call(["/bin/sh", "-c", "kill -s KILL -1"])
 
 
+def get_process_states() -> Generator[str, None, None]:
+    # The output of this command looks like:
+    #
+    # <name>        <state>     <timestamp>
+    # <name>        <state>     <timestamp>
+    # <name>        <state>     <timestamp>
+    #
+    res = subprocess.check_output(
+        ["/usr/local/bin/supervisorctl", "status", "all"],
+    )
+
+    for line in res.decode("utf-8").strip().splitlines():
+        _, state, _ = line.split()
+        yield f"PROCESS_STATE_{state}"
+
+
 def run(
     logger: Logger,
     grace_period_seconds: float,
@@ -90,6 +107,9 @@ Supervisord watchdog is running with:
                     )
                     kill_container(logger, grace_period_seconds)
 
+                    # UNREACHABLE: The entire container will have been terminated
+                    #              by this point in execution.
+
                 if event_name in PROCESS_CRASHED_EVENTS:
                     logger.critical(
                         "Process %s has crashed, killing container...",
@@ -97,28 +117,17 @@ Supervisord watchdog is running with:
                     )
                     kill_container(logger, grace_period_seconds)
 
-                if should_terminate_if_all_processes_end:
-                    # The output of this command looks like:
-                    #
-                    # <name>        <state>     <timestamp>
-                    # <name>        <state>     <timestamp>
-                    # <name>        <state>     <timestamp>
-                    #
-                    res = subprocess.check_output(
-                        ["/usr/local/bin/supervisorctl", "status", "all"],
-                    )
-                    for line in res.decode("utf-8").strip().splitlines():
-                        _, state, _ = line.split()
-                        if (
-                            f"PROCESS_STATE_{state}"
-                            not in PROCESS_NO_LONGER_RUNNING_EVENTS
-                        ):
-                            break
-                    else:
-                        logger.critical(
-                            "All processes have exited, killing container..."
-                        )
-                        kill_container(logger, grace_period_seconds)
+                    # UNREACHABLE: The entire container will have been terminated
+                    #              by this point in execution.
+
+                if should_terminate_if_all_processes_end and set(
+                    get_process_states()
+                ).issubset(PROCESS_NO_LONGER_RUNNING_EVENTS):
+                    logger.critical("All processes have exited, killing container...")
+                    kill_container(logger, grace_period_seconds)
+
+                    # UNREACHABLE: The entire container will have been terminated
+                    #              by this point in execution.
 
         except Exception as e:
             logger.critical("Unexpected Exception: %s, killing container...", str(e))
@@ -127,6 +136,9 @@ Supervisord watchdog is running with:
             # We assume that the watchdog process is critical to the container,
             # so if we get an unexpected exception, we kill the container.
             kill_container(logger, grace_period_seconds)
+
+            # UNREACHABLE: The entire container will have been terminated
+            #              by this point in execution.
         else:
             listener.ok(sys.stdout)
 
