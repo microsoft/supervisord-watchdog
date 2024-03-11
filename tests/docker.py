@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass
 from types import TracebackType
-from typing import List, Literal, Optional, Type, Union
+from typing import Literal, Optional, Union
 
 import docker
 
@@ -67,7 +67,7 @@ class DockerContainer:
 
     def __exit__(
         self,
-        _exc_type: Optional[Type[BaseException]],
+        _exc_type: Optional[type[BaseException]],
         _exc_value: Optional[BaseException],
         _traceback: Optional[TracebackType],
     ) -> Literal[False]:
@@ -80,12 +80,12 @@ class DockerContainer:
             return False
         try:
             self.container.reload()
-            return self.container.status == "running"
         except docker.errors.NotFound:
             self.container = None
             return False
+        return self.container.status == "running"
 
-    def exec(self, cmd: Union[str, List[str]]) -> None:
+    def exec(self, cmd: Union[str, list[str]]) -> None:
         self.logger.info(f"Running command: {cmd}...")
 
         assert self.is_alive(), "Container is not running."
