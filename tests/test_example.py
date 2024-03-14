@@ -8,11 +8,13 @@ logger = logging.getLogger(__name__)
 WATCHDOG_MAX_REACTION_TIME_SECONDS = 5
 
 
-# Basic integration test.
-#
-# We start the example container, kill the critical process,
-# and then check that the container dies as expected.
 def test_example_container() -> None:
+    """
+    Basic integration test.
+
+    We start the example container, kill the critical process,
+    and then check that the container dies as expected.
+    """
     # Spin up the example container
     with DockerContainer(logger, ".", "example/Dockerfile") as container:
         # The container should stay alive for a while

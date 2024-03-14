@@ -17,14 +17,16 @@ def replace_program_name(input_string, new_program_name):
     return re.sub(r"usage: ([^\s]+)", f"usage: {new_program_name}", input_string)
 
 
-# Test to make sure that the `Usage` section of this repo's README
-# doesn't get out of date.
 @pytest.mark.skipif(
     platform.python_version_tuple()[:2] != ("3", "9"),
     reason="The argparse help text changes between Python versions. "
     "We only need to test one version to make sure the README isn't out of date.",
 )
 def test_readme_help():
+    """
+    Test to make sure that the `Usage` section of this repo's README
+    doesn't get out of date.
+    """
     program_name = "supervisord_watchdog"
 
     with open("README.md") as fp:
