@@ -9,9 +9,11 @@ from supervisord_watchdog.watchdog import _create_argument_parser
 logger = logging.getLogger(__name__)
 
 
-# Replace "usage: any-program-name" in the input string with
-# "usage: some-other-program-name"
 def replace_program_name(input_string, new_program_name):
+    """
+    Replace "usage: any-program-name" in the input string with
+    "usage: some-other-program-name"
+    """
     return re.sub(r"usage: ([^\s]+)", f"usage: {new_program_name}", input_string)
 
 
