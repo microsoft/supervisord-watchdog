@@ -1,14 +1,58 @@
-# Project
+# supervisord-watchdog
 
-> This repo has been populated by an initial template to help get you started. Please
-> make sure to update the content to build a great experience for community-building.
+A Python package which monitors the state of supervisord processes, and
+terminates the container if any of the processes crash, if any of the critical
+processes terminate, and optionally if all processes have terminated.
 
-As the maintainer of this project, please make a few updates:
+## Usage
 
-- Improving this README.MD file to provide a great experience
-- Updating SUPPORT.MD with content about this project's support experience
-- Understanding the security reporting process in SECURITY.MD
-- Remove this section from the README
+In a container which uses supervisord as its init process, make sure the supervisord-watchdog
+package is installed.
+
+```
+pip install supervisord_watchdog
+```
+
+Then, add the following to your `supervisord.conf` file:
+
+```conf
+# supervisord_watchdog will kill the container if program:example-proc dies.
+[eventlistener:supervisord-watchdog]
+command=/usr/local/bin/supervisord_watchdog
+    --critical-process example-proc
+events=PROCESS_STATE
+autostart=true
+autorestart=false
+startretries=0
+```
+
+The available arguments to pass to `supervisord_watchdog` are:
+
+```
+usage: supervisord_watchdog [-h] [--grace-period GRACE_PERIOD]
+              [--critical-process CRITICAL_PROCESS [CRITICAL_PROCESS ...]]
+              [--terminate-if-all-processes-end]
+              [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
+
+Supervisord watchdog
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --grace-period GRACE_PERIOD, -g GRACE_PERIOD
+                        The number of seconds to wait for the container to
+                        shut down gracefully before sending SIGKILL to all
+                        processes. (default: 5.0)
+  --critical-process CRITICAL_PROCESS [CRITICAL_PROCESS ...], -c CRITICAL_PROCESS [CRITICAL_PROCESS ...]
+                        The names of the critical supervisord processes which
+                        should be monitored by the watchdog. If any of these
+                        processes terminate, then the container will be
+                        terminated (default: [])
+  --terminate-if-all-processes-end, -T
+                        Terminate the container if all supervisord processes
+                        terminate. (default: False)
+  --log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                        The log level to use for the watchdog. (default: INFO)
+```
 
 ## Contributing
 
